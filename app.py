@@ -4,25 +4,28 @@ from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
+from routes.auth_routes import USER_BASE
 
 
-app=Flask(__name__)
-app.config.from_object(Config)
+# app.py or __init__.py in a package
 
-mongo=PyMongo(app)
-bcrypt=Bcrypt(app)
-jwt=JWTManager(app)
-CORS(app)
+mongo = PyMongo()
+bcrypt = Bcrypt()
+jwt = JWTManager()
 
-from routes.auth_routes import auth_bp
-from routes.user_routes import user_bp
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.Config')  # or from_envvar, from_pyfile, etc
 
-app.register_blueprint(auth_bp,url_prefix='/auth')
-app.register_blueprint(user_bp,url_prefix='/user')
+    # Initialize extensions with app instance
+    mongo.init_app(app)
+    bcrypt.init_app(app)
+    jwt.init_app(app)
 
-if __name__=='__main__':
-    with app.app_context():
-        mongo.db.users.create_index("email", unique=True)
+    # Import and register blueprints here, after app creation
+    from routes.auth_routes import auth_bp, USER_BASE
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(USER_BASE, url_prefix='/user')
 
-    app.run(debug=True)
-# This will run the Flask application with debug mode enabled.
+    return app
+
